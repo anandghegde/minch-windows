@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8"?>
+<UserControl
+    x:Class="Minch.App.Views.OnboardingView"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:h="using:Minch.App.Helpers">
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <Grid MaxWidth="460" Margin="24,48,24,48" VerticalAlignment="Center">
+            <StackPanel Spacing="16">
+                <Image Width="88" Height="88" HorizontalAlignment="Center" Source="ms-appx:///Assets/minch-512.png" />
+                <TextBlock HorizontalAlignment="Center" Style="{StaticResource TitleLargeTextBlockStyle}" Text="Welcome to Minch" />
+                <TextBlock
+                    HorizontalAlignment="Center"
+                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                    Style="{StaticResource BodyTextBlockStyle}"
+                    Text="A fast, native client for your TorBox library. Connect with your API key to get started."
+                    TextAlignment="Center"
+                    TextWrapping="Wrap" />
+
+                <Border Margin="0,12,0,0" Style="{StaticResource CardBorderStyle}" Padding="20">
+                    <StackPanel Spacing="12">
+                        <PasswordBox
+                            x:Name="KeyBox"
+                            Header="TorBox API key"
+                            PlaceholderText="Paste your API key"
+                            Password="{x:Bind Session.PendingKey, Mode=TwoWay}"
+                            IsEnabled="{x:Bind h:Bind.Not(Session.IsBusy), Mode=OneWay}"
+                            KeyDown="OnKeyDown" />
+                        <InfoBar
+                            IsClosable="False"
+                            IsOpen="{x:Bind h:Bind.HasText(Session.SignInMessage), Mode=OneWay}"
+                            Message="{x:Bind Session.SignInMessage, Mode=OneWay}"
+                            Severity="Error" />
+                        <Grid ColumnSpacing="12">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <HyperlinkButton
+                                Padding="0"
+                                VerticalAlignment="Center"
+                                Content="Where do I find my key?"
+                                NavigateUri="https://torbox.app/settings?section=api" />
+                            <Button
+                                Grid.Column="1"
+                                MinWidth="120"
+                                Command="{x:Bind Session.ConnectCommand}"
+                                Style="{StaticResource AccentButtonStyle}">
+                                <Grid>
+                                    <TextBlock Text="Connect" Visibility="{x:Bind h:Bind.Collapsed(Session.IsBusy), Mode=OneWay}" />
+                                    <ProgressRing Width="16" Height="16" IsActive="{x:Bind Session.IsBusy, Mode=OneWay}" Visibility="{x:Bind h:Bind.Visible(Session.IsBusy), Mode=OneWay}" />
+                                </Grid>
+                            </Button>
+                        </Grid>
+                    </StackPanel>
+                </Border>
+
+                <TextBlock
+                    HorizontalAlignment="Center"
+                    Style="{StaticResource SecondaryTextStyle}"
+                    Text="Your key is stored in Windows Credential Manager and never leaves this PC except to talk to TorBox."
+                    TextAlignment="Center"
+                    TextTrimming="None"
+                    TextWrapping="Wrap" />
+            </StackPanel>
+        </Grid>
+    </ScrollViewer>
+</UserControl>

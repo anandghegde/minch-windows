@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<UserControl
+    x:Class="Minch.App.Views.ShellView"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:h="using:Minch.App.Helpers">
+    <NavigationView
+        x:Name="Nav"
+        IsBackButtonVisible="Collapsed"
+        IsSettingsVisible="True"
+        IsPaneToggleButtonVisible="True"
+        OpenPaneLength="240"
+        CompactModeThresholdWidth="720"
+        ExpandedModeThresholdWidth="1000"
+        PaneDisplayMode="Auto"
+        SelectionChanged="OnSelectionChanged">
+        <NavigationView.FooterMenuItems>
+            <NavigationViewItem x:Name="AccountItem" Content="Account" Tag="account">
+                <NavigationViewItem.Icon>
+                    <FontIcon Glyph="&#xE77B;" />
+                </NavigationViewItem.Icon>
+            </NavigationViewItem>
+        </NavigationView.FooterMenuItems>
+
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+
+            <StackPanel Margin="24,4,24,0" Spacing="4">
+                <InfoBar
+                    IsOpen="{x:Bind Session.HasError, Mode=OneWay}"
+                    Message="{x:Bind Session.ErrorMessage, Mode=OneWay}"
+                    Severity="Error"
+                    CloseButtonCommand="{x:Bind Session.DismissBannersCommand}" />
+                <InfoBar
+                    IsOpen="{x:Bind Session.HasInfo, Mode=OneWay}"
+                    Message="{x:Bind Session.InfoMessage, Mode=OneWay}"
+                    Severity="Success"
+                    CloseButtonCommand="{x:Bind Session.DismissBannersCommand}" />
+                <InfoBar x:Name="UpdateBar" Severity="Informational" Title="Update available" IsOpen="False">
+                    <InfoBar.ActionButton>
+                        <Button Content="Download" Click="OnUpdateDownload" />
+                    </InfoBar.ActionButton>
+                </InfoBar>
+            </StackPanel>
+
+            <Frame x:Name="ContentFrame" Grid.Row="1" IsNavigationStackEnabled="False" />
+        </Grid>
+    </NavigationView>
+</UserControl>

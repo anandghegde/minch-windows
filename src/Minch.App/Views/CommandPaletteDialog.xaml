@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ContentDialog
+    x:Class="Minch.App.Views.CommandPaletteDialog"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:vm="using:Minch.ViewModels"
+    Style="{StaticResource DefaultContentDialogStyle}"
+    CloseButtonText="Close"
+    DefaultButton="None">
+    <ContentDialog.Resources>
+        <x:Double x:Key="ContentDialogMaxWidth">640</x:Double>
+    </ContentDialog.Resources>
+    <Grid Width="560" RowSpacing="8">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+        <TextBox
+            x:Name="QueryBox"
+            PlaceholderText="Type a command, section, transfer or file…"
+            Text="{x:Bind Palette.Query, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+            PreviewKeyDown="OnQueryKeyDown" />
+        <ListView
+            x:Name="ResultsList"
+            Grid.Row="1"
+            MaxHeight="420"
+            IsItemClickEnabled="True"
+            ItemClick="OnItemClick"
+            ItemsSource="{x:Bind Palette.Results}"
+            SelectedItem="{x:Bind Palette.Selected, Mode=TwoWay, Converter={StaticResource ObjectPassthrough}}"
+            SelectionMode="Single">
+            <ListView.ItemTemplate>
+                <DataTemplate x:DataType="vm:PaletteItem">
+                    <Grid Padding="0,6" ColumnSpacing="12">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <FontIcon VerticalAlignment="Center" FontSize="16" Glyph="{x:Bind Glyph}" />
+                        <StackPanel Grid.Column="1" Spacing="1">
+                            <TextBlock Text="{x:Bind Title}" TextTrimming="CharacterEllipsis" />
+                            <TextBlock Style="{StaticResource SecondaryTextStyle}" Text="{x:Bind Subtitle}" />
+                        </StackPanel>
+                    </Grid>
+                </DataTemplate>
+            </ListView.ItemTemplate>
+        </ListView>
+    </Grid>
+</ContentDialog>

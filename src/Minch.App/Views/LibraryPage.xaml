@@ -1,0 +1,346 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Page
+    x:Class="Minch.App.Views.LibraryPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:h="using:Minch.App.Helpers"
+    xmlns:vm="using:Minch.ViewModels"
+    AllowDrop="True"
+    DragOver="OnDragOver"
+    Drop="OnDrop"
+    NavigationCacheMode="Required">
+
+    <Page.Resources>
+        <!-- ============================== file row ============================== -->
+        <DataTemplate x:Key="FileRowTemplate" x:DataType="vm:FileItemViewModel">
+            <Grid
+                Padding="12,8"
+                ColumnSpacing="12"
+                CornerRadius="4"
+                DoubleTapped="OnFileDoubleTapped"
+                Tag="{x:Bind}">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <FontIcon VerticalAlignment="Center" FontSize="16" Glyph="{x:Bind Glyph, Mode=OneWay}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
+                    <TextBlock Text="{x:Bind Name, Mode=OneWay}" TextTrimming="CharacterEllipsis" ToolTipService.ToolTip="{x:Bind Name, Mode=OneWay}" />
+                    <TextBlock Style="{StaticResource SecondaryTextStyle}" Text="{x:Bind Subtitle, Mode=OneWay}" />
+                    <ProgressBar
+                        Margin="0,4,0,0"
+                        Maximum="1"
+                        Value="{x:Bind DownloadFraction, Mode=OneWay}"
+                        Visibility="{x:Bind IsDownloading, Mode=OneWay}" />
+                </StackPanel>
+                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                    <Button
+                        Command="{x:Bind PlayCommand}"
+                        Style="{StaticResource AccentButtonStyle}"
+                        Visibility="{x:Bind CanPlay, Mode=OneWay}"
+                        ToolTipService.ToolTip="Play">
+                        <FontIcon FontSize="14" Glyph="&#xE768;" />
+                    </Button>
+                    <Button
+                        Command="{x:Bind DownloadCommand}"
+                        Visibility="{x:Bind h:Bind.VisibleIfAndNot(CanDownload, IsDownloaded), Mode=OneWay}"
+                        ToolTipService.ToolTip="Download to this PC">
+                        <FontIcon FontSize="14" Glyph="&#xE896;" />
+                    </Button>
+                    <Button
+                        Command="{x:Bind CancelDownloadCommand}"
+                        Visibility="{x:Bind IsDownloading, Mode=OneWay}"
+                        ToolTipService.ToolTip="Cancel download">
+                        <FontIcon FontSize="14" Glyph="&#xE711;" />
+                    </Button>
+                    <Button
+                        Command="{x:Bind RevealCommand}"
+                        Visibility="{x:Bind CanReveal, Mode=OneWay}"
+                        ToolTipService.ToolTip="Show in File Explorer">
+                        <FontIcon FontSize="14" Glyph="&#xE838;" />
+                    </Button>
+                    <Button Background="Transparent" BorderThickness="0" ToolTipService.ToolTip="More">
+                        <FontIcon FontSize="14" Glyph="&#xE712;" />
+                        <Button.Flyout>
+                            <MenuFlyout Placement="BottomEdgeAlignedRight" Opening="OnFileMenuOpening">
+                                <MenuFlyoutItem Text="Play in Minch" Command="{x:Bind PlayInAppCommand}" Visibility="{x:Bind CanPlay, Mode=OneWay}">
+                                    <MenuFlyoutItem.Icon><FontIcon Glyph="&#xE768;" /></MenuFlyoutItem.Icon>
+                                </MenuFlyoutItem>
+                                <MenuFlyoutSubItem Text="Play with" Tag="{x:Bind}">
+                                    <MenuFlyoutSubItem.Icon><FontIcon Glyph="&#xE8A7;" /></MenuFlyoutSubItem.Icon>
+                                </MenuFlyoutSubItem>
+                                <MenuFlyoutItem Text="Open with default app" Command="{x:Bind OpenWithDefaultAppCommand}" Visibility="{x:Bind IsDownloaded, Mode=OneWay}">
+                                    <MenuFlyoutItem.Icon><FontIcon Glyph="&#xE7AC;" /></MenuFlyoutItem.Icon>
+                                </MenuFlyoutItem>
+                                <MenuFlyoutSeparator />
+                                <MenuFlyoutItem Text="Copy download link" Command="{x:Bind CopyLinkCommand}">
+                                    <MenuFlyoutItem.Icon><FontIcon Glyph="&#xE71B;" /></MenuFlyoutItem.Icon>
+                                </MenuFlyoutItem>
+                                <MenuFlyoutItem Text="Copy stream URL" Command="{x:Bind CopyStreamUrlCommand}" Visibility="{x:Bind CanStream, Mode=OneWay}">
+                                    <MenuFlyoutItem.Icon><FontIcon Glyph="&#xE8C8;" /></MenuFlyoutItem.Icon>
+                                </MenuFlyoutItem>
+                                <MenuFlyoutItem Text="Download again" Command="{x:Bind DownloadCommand}" Visibility="{x:Bind h:Bind.VisibleIfBoth(CanDownload, IsDownloaded), Mode=OneWay}">
+                                    <MenuFlyoutItem.Icon><FontIcon Glyph="&#xE896;" /></MenuFlyoutItem.Icon>
+                                </MenuFlyoutItem>
+                            </MenuFlyout>
+                        </Button.Flyout>
+                    </Button>
+                </StackPanel>
+            </Grid>
+        </DataTemplate>
+
+        <!-- ============================ transfer row ============================ -->
+        <DataTemplate x:Key="TransferTemplate" x:DataType="vm:TransferItemViewModel">
+            <Expander
+                Margin="0,0,0,4"
+                HorizontalAlignment="Stretch"
+                HorizontalContentAlignment="Stretch"
+                IsExpanded="{x:Bind IsExpanded, Mode=TwoWay}"
+                Opacity="{x:Bind h:Bind.Opacity(IsDeleting), Mode=OneWay}">
+                <Expander.Header>
+                    <Grid Padding="0,10" ColumnSpacing="14">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <Grid Width="32" Height="32" VerticalAlignment="Center">
+                            <ProgressRing
+                                Width="32" Height="32"
+                                IsIndeterminate="False"
+                                Maximum="100"
+                                Value="{x:Bind ProgressPercent, Mode=OneWay}"
+                                Visibility="{x:Bind ShowProgress, Mode=OneWay}"
+                                Background="{ThemeResource ControlStrongFillColorDisabledBrush}" />
+                            <FontIcon FontSize="14" Glyph="{x:Bind StatusGlyph, Mode=OneWay}" />
+                        </Grid>
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
+                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                <FontIcon FontSize="12" Glyph="&#xE735;" Foreground="{ThemeResource SystemFillColorCautionBrush}" Visibility="{x:Bind IsFavorite, Mode=OneWay}" />
+                                <TextBlock
+                                    Style="{StaticResource BodyStrongTextBlockStyle}"
+                                    Text="{x:Bind Name, Mode=OneWay}"
+                                    TextTrimming="CharacterEllipsis"
+                                    ToolTipService.ToolTip="{x:Bind Name, Mode=OneWay}" />
+                            </StackPanel>
+                            <TextBlock Style="{StaticResource SecondaryTextStyle}" Text="{x:Bind MetaLine, Mode=OneWay}" />
+                            <ItemsRepeater ItemsSource="{x:Bind Tags, Mode=OneWay}" Visibility="{x:Bind HasTags, Mode=OneWay}" Margin="0,4,0,0">
+                                <ItemsRepeater.Layout>
+                                    <StackLayout Orientation="Horizontal" Spacing="4" />
+                                </ItemsRepeater.Layout>
+                                <ItemsRepeater.ItemTemplate>
+                                    <DataTemplate x:DataType="x:String">
+                                        <Border Padding="6,1" CornerRadius="4" Background="{ThemeResource SubtleFillColorSecondaryBrush}">
+                                            <TextBlock Style="{StaticResource CaptionTextBlockStyle}" Text="{x:Bind}" />
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsRepeater.ItemTemplate>
+                            </ItemsRepeater>
+                        </StackPanel>
+                        <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                            <Button Command="{x:Bind ResumeCommand}" Visibility="{x:Bind CanResume, Mode=OneWay}" ToolTipService.ToolTip="Resume">
+                                <FontIcon FontSize="14" Glyph="&#xE768;" />
+                            </Button>
+                            <Button Command="{x:Bind ToggleFavoriteCommand}" Background="Transparent" BorderThickness="0"
+                                    ToolTipService.ToolTip="{x:Bind h:Bind.FavoriteLabel(IsFavorite), Mode=OneWay}">
+                                <FontIcon FontSize="14" Glyph="{x:Bind h:Bind.FavoriteGlyph(IsFavorite), Mode=OneWay}" />
+                            </Button>
+                            <Button Background="Transparent" BorderThickness="0" ToolTipService.ToolTip="More">
+                                <FontIcon FontSize="14" Glyph="&#xE712;" />
+                                <Button.Flyout>
+                                    <MenuFlyout Placement="BottomEdgeAlignedRight">
+                                        <MenuFlyoutItem Text="Download all files" Command="{x:Bind DownloadAllCommand}" Visibility="{x:Bind IsDone, Mode=OneWay}">
+                                            <MenuFlyoutItem.Icon><FontIcon Glyph="&#xE896;" /></MenuFlyoutItem.Icon>
+                                        </MenuFlyoutItem>
+                                        <MenuFlyoutItem Text="Open download folder" Command="{x:Bind OpenFolderCommand}" Visibility="{x:Bind HasLocalFiles, Mode=OneWay}">
+                                            <MenuFlyoutItem.Icon><FontIcon Glyph="&#xE838;" /></MenuFlyoutItem.Icon>
+                                        </MenuFlyoutItem>
+                                        <MenuFlyoutSeparator />
+                                        <MenuFlyoutItem Text="Resume" Command="{x:Bind ResumeCommand}" Visibility="{x:Bind CanResume, Mode=OneWay}">
+                                            <MenuFlyoutItem.Icon><FontIcon Glyph="&#xE768;" /></MenuFlyoutItem.Icon>
+                                        </MenuFlyoutItem>
+                                        <MenuFlyoutItem Text="Reannounce" Command="{x:Bind ReannounceCommand}" Visibility="{x:Bind CanReannounce, Mode=OneWay}">
+                                            <MenuFlyoutItem.Icon><FontIcon Glyph="&#xE72C;" /></MenuFlyoutItem.Icon>
+                                        </MenuFlyoutItem>
+                                        <MenuFlyoutItem Text="Stop seeding" Command="{x:Bind StopSeedingCommand}" Visibility="{x:Bind CanStopSeeding, Mode=OneWay}">
+                                            <MenuFlyoutItem.Icon><FontIcon Glyph="&#xE71A;" /></MenuFlyoutItem.Icon>
+                                        </MenuFlyoutItem>
+                                        <MenuFlyoutItem Text="Rename…" Click="OnRename" Tag="{x:Bind}">
+                                            <MenuFlyoutItem.Icon><FontIcon Glyph="&#xE8AC;" /></MenuFlyoutItem.Icon>
+                                        </MenuFlyoutItem>
+                                        <MenuFlyoutItem Text="Edit tags…" Click="OnEditTags" Tag="{x:Bind}">
+                                            <MenuFlyoutItem.Icon><FontIcon Glyph="&#xE8EC;" /></MenuFlyoutItem.Icon>
+                                        </MenuFlyoutItem>
+                                        <MenuFlyoutSeparator />
+                                        <MenuFlyoutItem Text="Copy name" Command="{x:Bind CopyNameCommand}">
+                                            <MenuFlyoutItem.Icon><FontIcon Glyph="&#xE8C8;" /></MenuFlyoutItem.Icon>
+                                        </MenuFlyoutItem>
+                                        <MenuFlyoutItem Text="Copy info hash" Command="{x:Bind CopyHashCommand}" Visibility="{x:Bind h:Bind.Collapsed(IsWebDownload), Mode=OneWay}">
+                                            <MenuFlyoutItem.Icon><FontIcon Glyph="&#xE8C8;" /></MenuFlyoutItem.Icon>
+                                        </MenuFlyoutItem>
+                                        <MenuFlyoutSeparator />
+                                        <MenuFlyoutItem Text="Delete from TorBox…" Click="OnDelete" Tag="{x:Bind}">
+                                            <MenuFlyoutItem.Icon><FontIcon Glyph="&#xE74D;" /></MenuFlyoutItem.Icon>
+                                        </MenuFlyoutItem>
+                                    </MenuFlyout>
+                                </Button.Flyout>
+                            </Button>
+                        </StackPanel>
+                    </Grid>
+                </Expander.Header>
+
+                <StackPanel Spacing="2">
+                    <TextBlock
+                        Margin="12,0,12,8"
+                        Style="{StaticResource SecondaryTextStyle}"
+                        Text="{x:Bind FileCountText, Mode=OneWay}" />
+                    <ItemsRepeater ItemsSource="{x:Bind Files}" ItemTemplate="{StaticResource FileRowTemplate}">
+                        <ItemsRepeater.Layout>
+                            <StackLayout Spacing="2" />
+                        </ItemsRepeater.Layout>
+                    </ItemsRepeater>
+                </StackPanel>
+            </Expander>
+        </DataTemplate>
+    </Page.Resources>
+
+    <Grid Padding="24,8,24,0" RowSpacing="12">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <!-- Header -->
+        <Grid ColumnSpacing="12">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <StackPanel Orientation="Horizontal" Spacing="12" VerticalAlignment="Bottom">
+                <TextBlock Style="{StaticResource TitleTextBlockStyle}" Text="{x:Bind Library.SectionTitle, Mode=OneWay}" />
+                <TextBlock
+                    Margin="0,0,0,4"
+                    VerticalAlignment="Bottom"
+                    Style="{StaticResource SecondaryTextStyle}"
+                    Text="{x:Bind Library.CountText, Mode=OneWay}" />
+            </StackPanel>
+            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
+                <ProgressRing Width="18" Height="18" IsActive="{x:Bind Session.IsRefreshing, Mode=OneWay}" />
+                <Button Command="{x:Bind Session.RefreshCommand}" ToolTipService.ToolTip="Refresh (Ctrl+R)">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <FontIcon FontSize="14" Glyph="&#xE72C;" />
+                        <TextBlock Text="Refresh" />
+                    </StackPanel>
+                </Button>
+            </StackPanel>
+        </Grid>
+
+        <!-- Add bar -->
+        <Border Grid.Row="1" Style="{StaticResource CardBorderStyle}" Padding="12">
+            <StackPanel Spacing="8">
+                <Grid ColumnSpacing="8">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <TextBox
+                        x:Name="AddBox"
+                        PlaceholderText="Paste a magnet link or download URL"
+                        Text="{x:Bind Library.AddText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                        Visibility="{x:Bind h:Bind.Collapsed(Library.HasTorrentFile), Mode=OneWay}"
+                        KeyDown="OnAddKeyDown" />
+                    <Border
+                        Padding="10,5"
+                        Background="{ThemeResource SubtleFillColorSecondaryBrush}"
+                        CornerRadius="4"
+                        Visibility="{x:Bind Library.HasTorrentFile, Mode=OneWay}">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <FontIcon FontSize="14" Glyph="&#xE8A5;" />
+                            <TextBlock VerticalAlignment="Center" Text="{x:Bind Library.TorrentFileName, Mode=OneWay}" TextTrimming="CharacterEllipsis" />
+                            <Button Padding="4" Background="Transparent" BorderThickness="0" Command="{x:Bind Library.ClearTorrentFileCommand}" ToolTipService.ToolTip="Remove">
+                                <FontIcon FontSize="10" Glyph="&#xE711;" />
+                            </Button>
+                        </StackPanel>
+                    </Border>
+                    <Button Grid.Column="1" Click="OnBrowseTorrent" ToolTipService.ToolTip="Open a .torrent file (Ctrl+O)">
+                        <FontIcon FontSize="14" Glyph="&#xE8E5;" />
+                    </Button>
+                    <ToggleButton x:Name="OptionsToggle" Grid.Column="2" ToolTipService.ToolTip="Options">
+                        <FontIcon FontSize="14" Glyph="&#xE713;" />
+                    </ToggleButton>
+                    <Button
+                        Grid.Column="3"
+                        MinWidth="88"
+                        Command="{x:Bind Library.AddCommand}"
+                        Style="{StaticResource AccentButtonStyle}">
+                        <Grid>
+                            <TextBlock Text="Add" Visibility="{x:Bind h:Bind.Collapsed(Library.IsAdding), Mode=OneWay}" />
+                            <ProgressRing Width="16" Height="16" IsActive="{x:Bind Library.IsAdding, Mode=OneWay}" />
+                        </Grid>
+                    </Button>
+                </Grid>
+
+                <Grid ColumnSpacing="12" Visibility="{x:Bind h:Bind.Checked(OptionsToggle.IsChecked), Mode=OneWay}">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <TextBox PlaceholderText="Custom name (optional)" Text="{x:Bind Library.PendingName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                    <CheckBox
+                        Grid.Column="1"
+                        Content="Only add if cached"
+                        IsChecked="{x:Bind Library.CacheOnly, Mode=TwoWay}"
+                        IsEnabled="{x:Bind Library.IsMagnetInput, Mode=OneWay}"
+                        ToolTipService.ToolTip="Skip the add if TorBox doesn't already have it cached." />
+                </Grid>
+
+                <StackPanel Orientation="Horizontal" Spacing="6">
+                    <FontIcon
+                        FontSize="12"
+                        Foreground="{ThemeResource SystemFillColorSuccessBrush}"
+                        Glyph="&#xE945;"
+                        Visibility="{x:Bind Library.IsCached, Mode=OneWay}" />
+                    <TextBlock Style="{StaticResource SecondaryTextStyle}" Text="{x:Bind Library.AddHint, Mode=OneWay}" />
+                </StackPanel>
+                <InfoBar
+                    IsClosable="False"
+                    IsOpen="{x:Bind Library.HasAddError, Mode=OneWay}"
+                    Message="{x:Bind Library.AddError, Mode=OneWay}"
+                    Severity="Error" />
+            </StackPanel>
+        </Border>
+
+        <!-- List / empty state -->
+        <ScrollViewer Grid.Row="2" Padding="0,0,0,24" VerticalScrollBarVisibility="Auto">
+            <ItemsRepeater
+                ItemsSource="{x:Bind Library.Items}"
+                ItemTemplate="{StaticResource TransferTemplate}">
+                <ItemsRepeater.Layout>
+                    <StackLayout Spacing="0" />
+                </ItemsRepeater.Layout>
+            </ItemsRepeater>
+        </ScrollViewer>
+
+        <StackPanel
+            Grid.Row="2"
+            MaxWidth="420"
+            Margin="0,48,0,0"
+            HorizontalAlignment="Center"
+            VerticalAlignment="Top"
+            Spacing="8"
+            Visibility="{x:Bind Library.ShowEmptyState, Mode=OneWay}">
+            <FontIcon FontSize="40" Glyph="{x:Bind SectionGlyph(Library.SelectedSection), Mode=OneWay}" Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
+            <TextBlock HorizontalAlignment="Center" Style="{StaticResource SubtitleTextBlockStyle}" Text="{x:Bind Library.EmptyTitle, Mode=OneWay}" />
+            <TextBlock
+                HorizontalAlignment="Center"
+                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                Text="{x:Bind Library.EmptyMessage, Mode=OneWay}"
+                TextAlignment="Center"
+                TextWrapping="Wrap" />
+        </StackPanel>
+    </Grid>
+</Page>

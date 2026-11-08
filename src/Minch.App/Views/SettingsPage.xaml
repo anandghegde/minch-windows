@@ -1,0 +1,183 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Page
+    x:Class="Minch.App.Views.SettingsPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:h="using:Minch.App.Helpers"
+    xmlns:tk="using:CommunityToolkit.WinUI.Controls"
+    xmlns:vm="using:Minch.ViewModels">
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel MaxWidth="1000" Padding="24,8,24,36" Spacing="4">
+            <TextBlock Margin="0,0,0,8" Style="{StaticResource TitleTextBlockStyle}" Text="Settings" />
+
+            <!-- ============================ Downloads ============================ -->
+            <TextBlock Style="{StaticResource SectionHeaderStyle}" Text="Downloads" Margin="1,8,0,6" />
+            <tk:SettingsCard Header="Download folder" Description="{x:Bind Settings.DownloadFolder, Mode=OneWay}">
+                <tk:SettingsCard.HeaderIcon>
+                    <FontIcon Glyph="&#xE8B7;" />
+                </tk:SettingsCard.HeaderIcon>
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <Button Content="Open" Command="{x:Bind Settings.OpenDownloadFolderCommand}" />
+                    <Button Content="Change…" Click="OnPickFolder" />
+                    <Button Content="Reset" Command="{x:Bind Settings.ResetDownloadFolderCommand}" />
+                </StackPanel>
+            </tk:SettingsCard>
+            <tk:SettingsCard Header="Notify when a download finishes" Description="Show a Windows notification when a file lands on this PC.">
+                <tk:SettingsCard.HeaderIcon>
+                    <FontIcon Glyph="&#xEA8F;" />
+                </tk:SettingsCard.HeaderIcon>
+                <ToggleSwitch IsOn="{x:Bind Settings.NotifyOnDownloadComplete, Mode=TwoWay}" />
+            </tk:SettingsCard>
+            <tk:SettingsCard Header="Notify when TorBox finishes a transfer" Description="Toast when a torrent or web download becomes ready in the cloud.">
+                <tk:SettingsCard.HeaderIcon>
+                    <FontIcon Glyph="&#xE753;" />
+                </tk:SettingsCard.HeaderIcon>
+                <ToggleSwitch IsOn="{x:Bind Settings.NotifyOnTransferFinished, Mode=TwoWay}" />
+            </tk:SettingsCard>
+            <tk:SettingsCard
+                Header="Open magnet links with Minch"
+                Description="Register Minch as a magnet: handler for your account. Windows may ask you to confirm the first time."
+                Visibility="{x:Bind Settings.CanHandleMagnetLinks}">
+                <tk:SettingsCard.HeaderIcon>
+                    <FontIcon Glyph="&#xE71B;" />
+                </tk:SettingsCard.HeaderIcon>
+                <ToggleSwitch IsOn="{x:Bind Settings.HandleMagnetLinks, Mode=TwoWay}" />
+            </tk:SettingsCard>
+
+            <!-- ============================ Playback ============================ -->
+            <TextBlock Style="{StaticResource SectionHeaderStyle}" Text="Playback" />
+            <tk:SettingsExpander Header="External player" Description="Use VLC, mpv, MPC-HC or PotPlayer for formats Windows can't play natively.">
+                <tk:SettingsExpander.HeaderIcon>
+                    <FontIcon Glyph="&#xE8B2;" />
+                </tk:SettingsExpander.HeaderIcon>
+                <ComboBox
+                    MinWidth="200"
+                    ItemsSource="{x:Bind Settings.PlayerChoices, Mode=OneWay}"
+                    SelectedItem="{x:Bind Settings.PreferredPlayer, Mode=TwoWay, Converter={StaticResource ObjectPassthrough}}" />
+                <tk:SettingsExpander.Items>
+                    <tk:SettingsCard Header="Always prefer the external player" Description="Even for files Minch could play itself.">
+                        <ToggleSwitch IsOn="{x:Bind Settings.PreferExternalPlayer, Mode=TwoWay}" />
+                    </tk:SettingsCard>
+                    <tk:SettingsCard Header="No players found?" Description="Install one, then click Rescan." Visibility="{x:Bind h:Bind.Collapsed(Settings.HasExternalPlayers), Mode=OneWay}">
+                        <Button Content="Rescan" Click="OnRescanPlayers" />
+                    </tk:SettingsCard>
+                </tk:SettingsExpander.Items>
+            </tk:SettingsExpander>
+            <tk:SettingsExpander Header="Streaming" Description="Defaults for TorBox HLS streams.">
+                <tk:SettingsExpander.HeaderIcon>
+                    <FontIcon Glyph="&#xE93E;" />
+                </tk:SettingsExpander.HeaderIcon>
+                <tk:SettingsExpander.Items>
+                    <tk:SettingsCard Header="Preferred subtitle language" Description="ISO code or name, e.g. en or English. Leave empty for none.">
+                        <TextBox MinWidth="160" PlaceholderText="None" Text="{x:Bind Settings.PreferredSubtitleLanguage, Mode=TwoWay}" />
+                    </tk:SettingsCard>
+                    <tk:SettingsCard Header="Preferred audio language" Description="Used when a stream has more than one audio track.">
+                        <TextBox MinWidth="160" PlaceholderText="Default" Text="{x:Bind Settings.PreferredAudioLanguage, Mode=TwoWay}" />
+                    </tk:SettingsCard>
+                    <tk:SettingsCard Header="Scrobble to connected services" Description="Let TorBox report what you watch (Trakt etc.).">
+                        <ToggleSwitch IsOn="{x:Bind Settings.ScrobblingEnabled, Mode=TwoWay}" />
+                    </tk:SettingsCard>
+                </tk:SettingsExpander.Items>
+            </tk:SettingsExpander>
+
+            <!-- ============================ TorBox ============================ -->
+            <TextBlock Style="{StaticResource SectionHeaderStyle}" Text="TorBox account preferences" />
+            <InfoBar IsClosable="False" IsOpen="{x:Bind Settings.HasRemoteError, Mode=OneWay}" Message="{x:Bind Settings.RemoteError, Mode=OneWay}" Severity="Warning">
+                <InfoBar.ActionButton>
+                    <Button Content="Retry" Command="{x:Bind Settings.LoadRemoteCommand}" />
+                </InfoBar.ActionButton>
+            </InfoBar>
+            <ProgressBar IsIndeterminate="True" Visibility="{x:Bind Settings.IsLoadingRemote, Mode=OneWay}" />
+            <StackPanel Spacing="4" Visibility="{x:Bind Settings.HasRemote, Mode=OneWay}">
+                <tk:SettingsCard Header="Seed torrents" Description="{x:Bind vm:SettingsViewModel.SeedTooltip}">
+                    <tk:SettingsCard.HeaderIcon>
+                        <FontIcon Glyph="&#xE898;" />
+                    </tk:SettingsCard.HeaderIcon>
+                    <ComboBox
+                        MinWidth="140"
+                        ItemsSource="{x:Bind SeedChoices}"
+                        SelectedItem="{x:Bind Settings.SeedTorrents, Mode=TwoWay, Converter={StaticResource ObjectPassthrough}}" />
+                </tk:SettingsCard>
+                <tk:SettingsCard Header="Allow zipped downloads" Description="{x:Bind vm:SettingsViewModel.ZippedTooltip}">
+                    <tk:SettingsCard.HeaderIcon>
+                        <FontIcon Glyph="&#xF012;" />
+                    </tk:SettingsCard.HeaderIcon>
+                    <ToggleSwitch IsOn="{x:Bind Settings.AllowZipped, Mode=TwoWay}" />
+                </tk:SettingsCard>
+                <tk:SettingsCard Header="Download speed in browser tab" Description="{x:Bind vm:SettingsViewModel.SpeedInTabTooltip}">
+                    <tk:SettingsCard.HeaderIcon>
+                        <FontIcon Glyph="&#xEC4A;" />
+                    </tk:SettingsCard.HeaderIcon>
+                    <ToggleSwitch IsOn="{x:Bind Settings.DownloadSpeedInTab, Mode=TwoWay}" />
+                </tk:SettingsCard>
+                <tk:SettingsCard Header="Show trackers" Description="{x:Bind vm:SettingsViewModel.TrackerTooltip}">
+                    <tk:SettingsCard.HeaderIcon>
+                        <FontIcon Glyph="&#xE774;" />
+                    </tk:SettingsCard.HeaderIcon>
+                    <ToggleSwitch IsOn="{x:Bind Settings.ShowTrackerInTorrents, Mode=TwoWay}" />
+                </tk:SettingsCard>
+                <StackPanel Margin="0,8,0,0" HorizontalAlignment="Right" Orientation="Horizontal" Spacing="8">
+                    <Button Content="Revert" Command="{x:Bind Settings.RevertRemoteCommand}" IsEnabled="{x:Bind Settings.IsDirty, Mode=OneWay}" />
+                    <Button Content="Save to TorBox" Command="{x:Bind Settings.SaveRemoteCommand}" Style="{StaticResource AccentButtonStyle}" />
+                </StackPanel>
+            </StackPanel>
+
+            <!-- ============================ API key ============================ -->
+            <TextBlock Style="{StaticResource SectionHeaderStyle}" Text="API key" />
+            <tk:SettingsExpander Header="TorBox API key" Description="{x:Bind Settings.ApiKeyMask, Mode=OneWay}">
+                <tk:SettingsExpander.HeaderIcon>
+                    <FontIcon Glyph="&#xE8D7;" />
+                </tk:SettingsExpander.HeaderIcon>
+                <tk:SettingsExpander.Items>
+                    <tk:SettingsCard ContentAlignment="Left">
+                        <StackPanel MinWidth="360" Spacing="8">
+                            <PasswordBox Header="Replace with a new key" PlaceholderText="Paste a new API key" Password="{x:Bind Settings.NewApiKey, Mode=TwoWay}" />
+                            <InfoBar IsClosable="False" IsOpen="{x:Bind Settings.HasApiKeyError, Mode=OneWay}" Message="{x:Bind Settings.ApiKeyError, Mode=OneWay}" Severity="Error" />
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <Button Content="Validate and replace" Command="{x:Bind Settings.ReplaceApiKeyCommand}" Style="{StaticResource AccentButtonStyle}" />
+                                <ProgressRing Width="16" Height="16" IsActive="{x:Bind Settings.IsReplacingKey, Mode=OneWay}" />
+                            </StackPanel>
+                        </StackPanel>
+                    </tk:SettingsCard>
+                </tk:SettingsExpander.Items>
+            </tk:SettingsExpander>
+
+            <!-- ============================ App ============================ -->
+            <TextBlock Style="{StaticResource SectionHeaderStyle}" Text="App" />
+            <tk:SettingsCard Header="Theme">
+                <tk:SettingsCard.HeaderIcon>
+                    <FontIcon Glyph="&#xE790;" />
+                </tk:SettingsCard.HeaderIcon>
+                <ComboBox x:Name="ThemeBox" MinWidth="140" SelectionChanged="OnThemeChanged">
+                    <ComboBoxItem Content="Use system setting" Tag="System" />
+                    <ComboBoxItem Content="Light" Tag="Light" />
+                    <ComboBoxItem Content="Dark" Tag="Dark" />
+                </ComboBox>
+            </tk:SettingsCard>
+            <tk:SettingsCard Header="Keep running in the notification area" Description="Closing the window hides Minch so downloads and notifications continue.">
+                <tk:SettingsCard.HeaderIcon>
+                    <FontIcon Glyph="&#xE7E7;" />
+                </tk:SettingsCard.HeaderIcon>
+                <ToggleSwitch IsOn="{x:Bind Settings.CloseToTray, Mode=TwoWay}" />
+            </tk:SettingsCard>
+            <tk:SettingsCard Header="Start hidden" Description="Launch straight to the notification area." IsEnabled="{x:Bind Settings.CloseToTray, Mode=OneWay}">
+                <tk:SettingsCard.HeaderIcon>
+                    <FontIcon Glyph="&#xE73F;" />
+                </tk:SettingsCard.HeaderIcon>
+                <ToggleSwitch IsOn="{x:Bind Settings.StartMinimized, Mode=TwoWay}" />
+            </tk:SettingsCard>
+            <tk:SettingsCard Header="Check for updates" Description="Look for a new release on GitHub at launch.">
+                <tk:SettingsCard.HeaderIcon>
+                    <FontIcon Glyph="&#xE895;" />
+                </tk:SettingsCard.HeaderIcon>
+                <ToggleSwitch IsOn="{x:Bind Settings.CheckForUpdates, Mode=TwoWay}" />
+            </tk:SettingsCard>
+            <tk:SettingsCard Header="About Minch" Description="{x:Bind AboutText}">
+                <tk:SettingsCard.HeaderIcon>
+                    <FontIcon Glyph="&#xE946;" />
+                </tk:SettingsCard.HeaderIcon>
+                <HyperlinkButton Content="Source on GitHub" NavigateUri="https://github.com/anandghegde/minch-windows" />
+            </tk:SettingsCard>
+        </StackPanel>
+    </ScrollViewer>
+</Page>
